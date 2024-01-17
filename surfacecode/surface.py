@@ -36,8 +36,8 @@ class XCycle(BaseCycle):
         assert qnum >= 1, "You must have at least one measurement qubit."
 
         qc = QuantumCircuit(qnum, 1)
-        qc.h([0])
         qc.reset([0])
+        qc.h([0])
         for i in range(1, qnum):
             qc.cx(0, i)
 
@@ -62,5 +62,7 @@ class Cycle(BaseCycle):
                     qc.append(ZCycle._measure_z(len(self.lattice.graph[i]) + 1), [i] + self.lattice.graph[i], [i // 2 + j * (num_nodes // 2)])
                 elif type(node) == XNode:
                     qc.append(XCycle._measure_x(len(self.lattice.graph[i]) + 1), [i] + self.lattice.graph[i], [i // 2 + j * (num_nodes // 2)])
+
+            qc.barrier()
 
         return qc

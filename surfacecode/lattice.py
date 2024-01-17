@@ -22,19 +22,20 @@ class SquareLattice(BaseLattice):
         nodes = [DataNode() if i % 2 == 0 else BaseNode() for i in range(width*height)]
         j = 1
         for i in range(1, width*height, 2):
-            if i < width * j:
-                nodes[i] = ZNode() if j % 2 == 1 else XNode()
-            else:
+            if i >= width *j:
                 j += 1
+            # if i < width * j:
+            nodes[i] = ZNode() if j % 2 == 1 else XNode()
+            
             
         graph = {}
         for i in range(len(nodes)):
             edges = []
-            if i % (width - 1) != 0:
+            if i % width != width - 1:
                 edges.append(i + 1)
             if i + width < width * height:
                 edges.append(i + width)
-            if i > 0:
+            if i % width > 0:
                 edges.append(i - 1)
             if i - width >= 0:
                 edges.append(i - width)
