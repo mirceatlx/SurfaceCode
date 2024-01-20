@@ -61,6 +61,10 @@ class HeavyHexLattice(BaseLattice):
         super().__init__(nodes, graph)
 
     def _create_graph(self, distance):
+        """
+        Method that creates the heavy hex graph
+        :param distance: distance of heavy hex code must be an odd number
+        """
         assert distance % 2 == 1
         # Formula for number of nodes for HeavyHexLattice given a distance
         nodes = self._create_nodes()
@@ -70,6 +74,9 @@ class HeavyHexLattice(BaseLattice):
         return nodes, graph
 
     def _create_nodes(self):
+        """
+        Method that creates nodes and assign them their index in the array
+        """
         nodes = []
         # Add data, flag, ancilla nodes
         col = 0
@@ -103,6 +110,9 @@ class HeavyHexLattice(BaseLattice):
         return nodes
     
     def _connect_data_flag(self):
+        """
+        Assigns edges to data and flag nodes and returns a the dictionary graph
+        """
         graph = {}
         col = 0
         itr = 0
@@ -137,6 +147,10 @@ class HeavyHexLattice(BaseLattice):
         return graph
     
     def _connect_ancilla(self, graph):
+        """
+        Connects ancilla nodes to data and flag nodes and vice versa.
+        :param graph: Graph of nodes where it is assumed data and flag nodes are connected
+        """
         col = 0
         itr = 0
         # Connect ancilla nodes to data, flag nodes and vice versa
@@ -191,6 +205,5 @@ class HeavyHexLattice(BaseLattice):
                 
             itr += 1
 
-        print(graph)
         return graph
 
