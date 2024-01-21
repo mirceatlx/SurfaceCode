@@ -1,15 +1,25 @@
-from qiskit import QuantumCircuit
+from qiskit import QuantumCircuit, ClassicalRegister
+from surfacecode.lattice import SquareLattice
+from surfacecode.nodes import ZNode, XNode
 import heapq
 
 class CircuitBuilder:
     def __init__(self, lattice):
         self.lattice = lattice
-        self.circuit = QuantumCircuit(len(lattice.nodes), len(lattice.nodes))
-
+        self.circuit = QuantumCircuit(len(lattice.nodes))
 
     def _build(self):
         return self.circuit
     
+    def barrier(self):
+        self.circuit.barrier()
+    
+    def id(self, q):
+        self.circuit.id(q)
+
+    def reset(self, q):
+        self.circuit.reset(q)
+
     def h(self, q):
         self.circuit.h(q)
 
@@ -21,6 +31,12 @@ class CircuitBuilder:
 
     def y(self, q):
         self.circuit.y(q)
+
+    def measure(self, q, c):
+        self.circuit.measure(q, c)
+
+    def add_register(self, register):
+        self.circuit.add_register(register)
 
     def cx(self, q1, q2):
         path = self.dijkstra(q1, q2)
@@ -34,8 +50,13 @@ class CircuitBuilder:
             self.circuit.swap(path[i + 1], path[i])
 
     def dijkstra(self, start, end):
-        graph = self.lattice.graph
-       # Initialize distances with infinity for all nodes except the start node
+        try:
+            # See if the lattice is actually an adapter
+            graph = self.lattice.lattice.graph
+        except: 
+            graph = self.lattice.graph
+
+        # Initialize distances with infinity for all nodes except the start node
         distances = {node: float('infinity') for node in graph}
         distances[start] = 0
         
@@ -67,3 +88,52 @@ class CircuitBuilder:
         final_paths = {node: path + [node] for node, path in paths.items()}
 
         return final_paths[end]
+
+class SurfaceCodeBuilder(CircuitBuilder):
+    def __init__ (self, lattice):
+        assert type(lattice) is SquareLattice
+        super().__init__(lattice)
+
+    def _build(self, num_cycles=1):
+        num_nodes = len(self.lattice.nodes)
+
+        for j in range(num_cycles):
+            self.add_register(ClassicalRegister(num_nodes // 2))
+
+            for i, node in enumerate(self.lattice.nodes):
+                if type(node) == ZNode:
+                    self._measure_z(i, i // 2 + j * (num_nodes // 2), self.lattice.graph[i])
+                elif type(node) == XNode:
+                    self._measure_x(i, i // 2 + j * (num_nodes // 2), self.lattice.graph[i])
+
+            self.barrier()
+
+        return super()._build()
+
+    def _measure_z(self, qZ, c, qData=[]):
+        assert type(qZ) is not list, "You must only give one Measure Z qubit"
+        assert type(qData) is list, "You must give a list of data qubits"
+
+        self.barrier()
+        self.id([qZ])
+        self.reset([qZ])
+        for i in qData:
+            self.cx(i, qZ)
+
+        self.measure([qZ], [c])
+        self.id([qZ])
+        self.barrier()
+
+    def _measure_x(self, qX, c, qData=[]):
+        assert type(qX) is not list, "You must only give one Measure X qubit"
+        assert type(qData) is list, "You must give a list of data qubits"
+        
+        self.barrier()
+        self.reset([qX])
+        self.h([qX])
+        for i in qData:
+            self.cx(qX, i)
+
+        self.h([qX])
+        self.measure([qX], [c])
+        self.barrier()
