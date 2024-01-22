@@ -53,6 +53,7 @@ class HeavyHexLattice(BaseLattice):
         assert distance % 2 == 1
 
         # Formula for number of nodes for HeavyHexLattice given a distance
+        self.distance = distance
         self.nodes_num = int((5*distance**2- 2*distance - 1) / 2)
         self.flag_data_column_length = int(distance * 2 - 1)
         self.ancilla_column_length = (distance + 1) // 2

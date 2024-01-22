@@ -91,20 +91,23 @@ class CircuitBuilder:
 
 class SurfaceCodeBuilder(CircuitBuilder):
     def __init__ (self, lattice):
-        assert type(lattice) is SquareLattice
+        assert isinstance(lattice, SquareLattice)
         super().__init__(lattice)
 
     def _build(self, num_cycles=1):
         num_nodes = len(self.lattice.nodes)
 
         for j in range(num_cycles):
-            self.add_register(ClassicalRegister(num_nodes // 2))
+            self.add_register(ClassicalRegister(num_nodes))
 
-            for i, node in enumerate(self.lattice.nodes):
+            print(self.lattice.graph.keys())
+            for i in self.lattice.graph.keys():
+                node = self.lattice.nodes[i]
+                print(f"{i} {node}")
                 if type(node) == ZNode:
-                    self._measure_z(i, i // 2 + j * (num_nodes // 2), self.lattice.graph[i])
+                    self._measure_z(i, i + j * num_nodes, self.lattice.graph[i])
                 elif type(node) == XNode:
-                    self._measure_x(i, i // 2 + j * (num_nodes // 2), self.lattice.graph[i])
+                    self._measure_x(i, i + j * num_nodes, self.lattice.graph[i])
 
             self.barrier()
 
