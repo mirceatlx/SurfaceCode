@@ -74,7 +74,7 @@ class LQubit:
             qc.x(self.m_node + 1)
             qc.x(self.m_node - 1)
             qc.x(self.m_node + self.lattice.width)
-            qc.x(self.m_node - self.lattice.width)
+            qc.x(self.m_node - self.lattice.width) 
         qc.barrier()
         return qc
 
@@ -92,8 +92,35 @@ class LQubit:
         qc.barrier()
         return qc
     
+    def X(self):
+        if self.type:
+            return self.line_gate()
+        else:
+            return self.circle_gate()
+    
+    def Z(self):
+        if self.type:
+            return self.circle_gate()
+        else:
+            return self.line_gate()
+
     def move_cell(self, cycle, start, end):
-        pass
+        route = self.route(start, end)
+        num_nodes = len(self.lattice.nodes)
+        qc = QuantumCircuit(num_nodes, 3 * (num_nodes // 2))
+        qc.compose
+        for i in route:
+            self.lattice._switch_node(i, False)
+        qc.compose(cycle._circuit(1))
+        route.pop()
+        for i in route:
+            self.lattice._switch_node(i, True)
+        qc.compose(cycle._circuit(1))
+        return qc
+    
+    def braidZX(self, other):
+
+        
 
     def route(self, start, end):
         route = []
