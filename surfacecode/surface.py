@@ -58,10 +58,15 @@ class Cycle(BaseCycle):
 
         for j in range(num_cycles):
             for i, node in enumerate(self.lattice.nodes):
+                connected_qubits = []
+                print(self.lattice.graph[i])
+                for k in self.lattice.graph[i]:
+                    if k.active == True:
+                        connected_qubits.append(k.node)
                 if type(node) == ZNode:
-                    qc.append(ZCycle._measure_z(len(self.lattice.graph[i]) + 1), [i] + self.lattice.graph[i], [i // 2 + j * (num_nodes // 2)])
+                    qc.append(ZCycle._measure_z(len(connected_qubits) + 1), [i] + connected_qubits, [i // 2 + j * (num_nodes // 2)])
                 elif type(node) == XNode:
-                    qc.append(XCycle._measure_x(len(self.lattice.graph[i]) + 1), [i] + self.lattice.graph[i], [i // 2 + j * (num_nodes // 2)])
+                    qc.append(XCycle._measure_x(len(connected_qubits) + 1), [i] + connected_qubits, [i // 2 + j * (num_nodes // 2)])
 
             qc.barrier()
 
