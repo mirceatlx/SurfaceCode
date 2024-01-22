@@ -7,7 +7,7 @@ class parser:
     # without there will be a list of lists
     def parse(number, breakpoints, names = None):
         list = [int(d) for d in str(bin(number))[2:]]
-        print(list)
+        list = list.reverse()
         if names is None:
             output = []
             pointer = 0
@@ -28,7 +28,4 @@ class parser:
                     pointer = pointer + 1
                 output[names[i]] = temp 
             return output
-        
-    o = parse(31,[1,3])
-    print(o)
             
