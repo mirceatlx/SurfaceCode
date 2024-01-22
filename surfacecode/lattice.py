@@ -7,6 +7,16 @@ class BaseLattice:
        self.graph = graph
 
 class SquareLattice(BaseLattice):
+    """
+    Class for Square Lattice
+    N -- N -- N -- N
+    |    |    |    |
+    N -- N -- N -- N
+    |    |    |    |
+    N -- N -- N -- N
+    |    |    |    |
+    N -- N -- N -- N
+    """
 
     def __init__(self, width, height):
 
@@ -45,6 +55,26 @@ class SquareLattice(BaseLattice):
         return nodes, graph
 
 class HeavyHexLattice(BaseLattice):
+    """
+    Class for Heavy Hex Lattice where D is data node, A is ancilla node, F is flag node
+    D -- A -- D         D -- A -- D         D
+    |         |         |         |         |
+    F         F -- A -- F         F -- A -- F
+    |         |         |         |         |
+    D         D         D         D         D
+    |         |         |         |         |
+    F -- A -- F         F -- A -- F         F
+    |         |         |         |         |
+    D         D         D         D         D
+    |         |         |         |         |
+    F         F -- A -- F         F -- A -- F
+    |         |         |         |         |
+    D         D         D         D         D
+    |         |         |         |         |
+    F -- A -- F         F -- A -- F         F
+    |         |         |         |         |
+    D         D -- A -- D         D -- A -- D
+    """
 
     def __init__(self, distance):
         """
@@ -58,6 +88,7 @@ class HeavyHexLattice(BaseLattice):
         self.flag_data_column_length = int(distance * 2 - 1)
         self.ancilla_column_length = (distance + 1) // 2
 
+        # Nodes indices go from up down then left to right
         nodes, graph = self._create_graph(distance)
         super().__init__(nodes, graph)
 
