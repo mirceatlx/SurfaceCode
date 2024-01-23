@@ -113,6 +113,20 @@ class HeavyHexLattice(BaseLattice):
         nodes, graph = self._create_graph(distance)
         super().__init__(nodes, graph)
 
+    def _switch_node(self, t_node, switch):
+        temp1 = []
+        for i in self.graph[t_node]:
+            temp1.append(Edge(i.node, switch))
+            temp2 = []
+            for e in self.graph[i.node]:
+                if e.node == t_node:
+                    temp2.append(Edge(t_node, switch))
+                else:
+                    temp2.append(e)
+            self.graph[i.node] = temp2
+        self.graph[t_node]=temp1
+        return
+
     def _create_graph(self, distance):
         """
         Method that creates the heavy hex graph
@@ -171,17 +185,17 @@ class HeavyHexLattice(BaseLattice):
         itr = 0
         # Connect data and flag nodes
         for i in range(self.nodes_num):
-            neighbours = []
+            edges = []
             # If we are on data flag node column
             if col % 2 == 0:
                 # Add neighbour above
                 if itr > 0:
-                    neighbours.append(i - 1)
+                    edges.append(Edge(i - 1))
                 # Add below neighbour
                 if itr < self.flag_data_column_length - 1:
-                    neighbours.append(i + 1)
+                    edges.append(Edge(i + 1))
 
-                graph[i] = neighbours
+                graph[i] = edges
             
             # If we reach the end of the data flag column, increment col and reset itr values
             if itr == self.flag_data_column_length - 1 and col % 2 == 0:
@@ -208,7 +222,7 @@ class HeavyHexLattice(BaseLattice):
         itr = 0
         # Connect ancilla nodes to data, flag nodes and vice versa
         for i in range(self.nodes_num):
-            neighbours = []
+            edges = []
             #If we are on ancilla node column
             if col % 2 == 1:
                 # If we are on even ancilla node column (start counting from zero)
@@ -221,10 +235,10 @@ class HeavyHexLattice(BaseLattice):
                         target1 = i - (self.flag_data_column_length - itr * 3 + 1)
                         target2 = i + (self.ancilla_column_length + itr * 3 - 1)
 
-                    neighbours.append(target1)
-                    neighbours.append(target2)
-                    graph[target1].append(i)
-                    graph[target2].append(i)
+                    edges.append(Edge(target1))
+                    edges.append(Edge(target2))
+                    graph[target1].append(Edge(i))
+                    graph[target2].append(Edge(i))
 
 
                 # If we are on odd ancilla node column
@@ -237,12 +251,12 @@ class HeavyHexLattice(BaseLattice):
                         target1 = i - (self.flag_data_column_length - itr * 3 - 1)
                         target2 = i + (self.ancilla_column_length + itr * 3 + 1)
 
-                    neighbours.append(target1)
-                    neighbours.append(target2)
-                    graph[target1].append(i)
-                    graph[target2].append(i)
+                    edges.append(Edge(target1))
+                    edges.append(Edge(target2))
+                    graph[target1].append(Edge(i))
+                    graph[target2].append(Edge(i))
                 
-                graph[i] = neighbours
+                graph[i] = edges
 
             # If we reach the end of the data flag column, increment col and reset itr values
             if itr == self.flag_data_column_length - 1 and col % 2 == 0:

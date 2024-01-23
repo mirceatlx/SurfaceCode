@@ -1,4 +1,4 @@
-from surfacecode.lattice import SquareLattice, HeavyHexLattice
+from surfacecode.lattice import SquareLattice, HeavyHexLattice, Edge
 from surfacecode.nodes import *
 
 class DirectMap(SquareLattice):
@@ -58,16 +58,16 @@ class DirectMap(SquareLattice):
                 edges = []
                 # If node is not at bottom side
                 if i % width != width - 1:
-                    edges.append(idx + 2)
+                    edges.append(Edge(idx + 2))
                 # If node is not at right side
                 if i + width < width * height:
-                    edges.append(idx + self.lattice.flag_data_column_length + self.lattice.ancilla_column_length)
+                    edges.append(Edge(idx + self.lattice.flag_data_column_length + self.lattice.ancilla_column_length))
                 # If node is not at top side
                 if i % width > 0:
-                    edges.append(idx - 2)
+                    edges.append(Edge(idx - 2))
                 # If node is not at left side
                 if i - width >= 0:
-                    edges.append(idx - self.lattice.flag_data_column_length - self.lattice.ancilla_column_length)
+                    edges.append(Edge(idx - self.lattice.flag_data_column_length - self.lattice.ancilla_column_length))
 
                 graph[idx] = edges
                 i += 1

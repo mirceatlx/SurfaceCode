@@ -11,7 +11,7 @@ class ConstrainedQuantumCircuit(QuantumCircuit):
     def __init__(self, lattice, *regs, name=None, global_phase=0, metadata=None):
         assert isinstance(lattice, BaseLattice)
         self.lattice = lattice
-        
+
         qnum = 0
         for reg in regs:
             if type(reg) is int:
@@ -81,7 +81,11 @@ class ConstrainedQuantumCircuit(QuantumCircuit):
                 continue
 
             # Explore neighbors of the current node
-            for neighbor in graph[current_node]:
+            for edge in graph[current_node]:
+                # Check if edge is active
+                if edge.active == False:
+                    continue
+                neighbor = edge.node
                 weight = 1
                 distance = current_distance + weight
 
