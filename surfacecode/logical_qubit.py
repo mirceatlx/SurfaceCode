@@ -1,4 +1,5 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from surfacecode.circuits import ConstrainedQuantumCircuit
 
 class LQubit:
     #type specifies if the qubit is a Z-cut or X-cut qubit. True for Z-cut, False for X-cut.
@@ -12,7 +13,7 @@ class LQubit:
     def initialize(self):
         num_nodes = len(self.lattice.nodes)
         c = ClassicalRegister(1)
-        qc = QuantumCircuit(QuantumRegister(num_nodes), c)
+        qc = ConstrainedQuantumCircuit(self.lattice, QuantumRegister(num_nodes), c)
         self.lattice._switch_node(self.m_node, False)
         self.lattice._switch_node(self.a_node, False)
         if self.type:
@@ -43,7 +44,7 @@ class LQubit:
     def measure(self):
         num_nodes = len(self.lattice.nodes)
         c = ClassicalRegister(1)
-        qc = QuantumCircuit(QuantumRegister(num_nodes), c)
+        qc = ConstrainedQuantumCircuit(self.lattice, QuantumRegister(num_nodes), c)
         if self.type:
             qc.cx(self.m_node + 1, self.m_node)
             qc.cx(self.m_node - 1, self.m_node)
@@ -65,7 +66,7 @@ class LQubit:
     def alt_initialize(self, cycle):
         route = self.route(self.m_node, self.a_node)
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes, len(route) // 2 + num_nodes // 2)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, len(route) // 2 + num_nodes // 2)
         reg = 0
         data_qubits = route[1::2]
 
@@ -93,7 +94,7 @@ class LQubit:
     def alt_measure(self):
         route = self.route(self.m_node, self.a_node)
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes, len(route) // 2)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, len(route) // 2)
         reg = 0
         data_qubits = route[1::2]
 
@@ -113,7 +114,7 @@ class LQubit:
 
     def circle_gate(self):
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes)
         if self.type:
             qc.z(self.m_node + 1)
             qc.z(self.m_node - 1)
@@ -130,7 +131,7 @@ class LQubit:
     # direction can be vertical(True) or horisontal(False)
     def line_gate(self):
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes)
         route = self.route(self.m_node, self.a_node)
         data_qubits = route[1::2]
         for i in data_qubits:
@@ -156,7 +157,7 @@ class LQubit:
     def move_cell(self, cycle, start, end):
         route = self.route(start, end)
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes, 3 * (num_nodes // 2) + len(route) // 2)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, 3 * (num_nodes // 2) + len(route) // 2)
         qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2), len(route) // 2 + num_nodes // 2))
         for i in route:
             self.lattice._switch_node(i, False)
