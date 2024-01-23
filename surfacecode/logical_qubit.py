@@ -61,6 +61,55 @@ class LQubit:
         self.lattice._switch_node(self.a_node, True)
         qc.barrier()
         return qc
+    
+    def alt_initialize(self, cycle):
+        route = self.route(self.m_node, self.a_node)
+        num_nodes = len(self.lattice.nodes)
+        qc = QuantumCircuit(num_nodes, len(route) // 2 + num_nodes // 2)
+        reg = 0
+        data_qubits = route[1::2]
+
+        for i in route:
+            self.lattice._switch_node(i, False)
+        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2), len(route) // 2 + num_nodes // 2))
+
+        for i in data_qubits:
+            if self.type:
+                qc.x(i)
+                qc.measure([i], [reg])
+                qc.x(i)
+            else:
+                qc.measure([i], [reg])
+            reg = reg + 1
+
+        for i in route:
+            self.lattice._switch_node(i, True)
+        self.lattice._switch_node(route[0], False)
+        self.lattice._switch_node(route[-1], False)
+
+        qc.barrier()
+        return qc
+
+    def alt_measure(self):
+        route = self.route(self.m_node, self.a_node)
+        num_nodes = len(self.lattice.nodes)
+        qc = QuantumCircuit(num_nodes, len(route) // 2)
+        reg = 0
+        data_qubits = route[1::2]
+
+        for i in data_qubits:
+            if self.type:
+                qc.x(i)
+                qc.measure([i], [reg])
+                qc.x(i)
+            else:
+                qc.measure([i], [reg])
+            reg = reg + 1
+
+        for i in route:
+            self.lattice._switch_node(i, True)
+        qc.barrier()
+        return qc
 
     def circle_gate(self):
         num_nodes = len(self.lattice.nodes)
@@ -107,27 +156,50 @@ class LQubit:
     def move_cell(self, cycle, start, end):
         route = self.route(start, end)
         num_nodes = len(self.lattice.nodes)
-        qc = QuantumCircuit(num_nodes, 3 * (num_nodes // 2))
-        qc.compose
+        qc = QuantumCircuit(num_nodes, 3 * (num_nodes // 2) + len(route) // 2)
+        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2), len(route) // 2 + num_nodes // 2))
         for i in route:
             self.lattice._switch_node(i, False)
-        qc.compose(cycle._circuit(1))
+        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2) + num_nodes // 2, len(route) // 2 + 2 * (num_nodes // 2)))
+
+        data_qubits = route[1::2]
+        register = 0
+        for i in data_qubits:
+            if self.type:
+                qc.h(i)
+                qc.measure([i], [register])
+                qc.h(i)
+            else:
+                qc.measure([i], [register])
+            register = register + 1
+
         route.pop()
         for i in route:
             self.lattice._switch_node(i, True)
-        qc.compose(cycle._circuit(1))
+        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route // 2)) + 2 * (num_nodes // 2), len(route // 2) + 3 * (num_nodes // 2)))
+        qc.barrier()
         return qc
-    
-    def braidZX(self, other):
 
-        
-
-    def route(self, start, end):
+    # by default, it will move on the x-axis first if possible, and then move on the y-axis
+    # if alt=true, it will move on the y-axis first instead
+    def route(self, start, end, alt = False):
         route = []
         width = self.lattice.width
         c_start = (start % width, start // width)
         c_end = (end % width, end // width)
         route.append(c_start)
+        if alt:
+            while route[-1][1] != c_end[1]:
+                if route[-1][1]>c_end[1]:
+                    route.append((route[-1][0],route[-1][1]-1))
+                else:
+                    route.append((route[-1][0],route[-1][1]+1))
+            while route[-1][0] != c_end[0]:
+                if route[-1][0]>c_end[0]:
+                    route.append((route[-1][0]-1,route[-1][1]))
+                else:
+                    route.append((route[-1][0]+1,route[-1][1]))
+        
         while route[-1][0] != c_end[0]:
             if route[-1][0]>c_end[0]:
                 route.append((route[-1][0]-1,route[-1][1]))
@@ -139,4 +211,3 @@ class LQubit:
             else:
                 route.append((route[-1][0],route[-1][1]+1))
         return list(map(lambda x : x[0] + width * x[1],route))
-
