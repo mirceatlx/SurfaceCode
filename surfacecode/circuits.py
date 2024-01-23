@@ -1,48 +1,34 @@
-from qiskit import QuantumCircuit, ClassicalRegister
-from surfacecode.lattice import SquareLattice
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from surfacecode.lattice import SquareLattice, BaseLattice
 from surfacecode.nodes import ZNode, XNode
 import heapq
+import warnings
 
-class CircuitBuilder:
+class ConstrainedQuantumCircuit(QuantumCircuit):
     """
     A QuantumCircuit Builder that is constrained by the given lattice
     """
-    def __init__(self, lattice):
+    def __init__(self, lattice, *regs, name=None, global_phase=0, metadata=None):
+        assert isinstance(lattice, BaseLattice)
         self.lattice = lattice
-        self.circuit = QuantumCircuit(len(lattice.nodes))
+        print(*regs)
 
-    def _build(self):
-        """
-        Returns the QuantumCircuit that was being built
-        """
-        return self.circuit
-    
-    def barrier(self):
-        self.circuit.barrier()
-    
-    def id(self, q):
-        self.circuit.id(q)
+        qnum = 0
+        for reg in regs:
+            if type(reg) is int:
+                qnum = reg
+                # Break because for int is always qubit number
+                break
 
-    def reset(self, q):
-        self.circuit.reset(q)
+            if type(reg) is QuantumRegister:
+                qnum += reg.size
 
-    def h(self, q):
-        self.circuit.h(q)
+        
+        if qnum != len(lattice.nodes):
+            warnings.warn("Number of qubits and number of nodes in lattice do not match")
 
-    def x(self, q):
-        self.circuit.x(q)
 
-    def z(self, q):
-        self.circuit.z(q)
-
-    def y(self, q):
-        self.circuit.y(q)
-
-    def measure(self, q, c):
-        self.circuit.measure(q, c)
-
-    def add_register(self, register):
-        self.circuit.add_register(register)
+        super().__init__(*regs, name=name, global_phase=global_phase, metadata=metadata)
 
     def cx(self, q1, q2):
         """
@@ -56,14 +42,14 @@ class CircuitBuilder:
 
         # For every node in between q1 and q2, apply swap until the data of q1 is next to q2
         for i in range(0, len(path) - 2):
-            self.circuit.swap(path[i], path[i + 1])
+            self.swap(path[i], path[i + 1])
 
         # Apply the CNOT gate to q2 and q2's neighbour
-        self.circuit.cx(path[len(path) - 2], path[len(path) - 1])
+        super().cx(path[len(path) - 2], path[len(path) - 1])
 
         # Reverse the swaps to put the new value at q1
         for i in reversed(range(0, len(path) - 2)):
-            self.circuit.swap(path[i + 1], path[i])
+            self.swap(path[i + 1], path[i])
 
     def dijkstra(self, start, end):
         """
@@ -110,75 +96,75 @@ class CircuitBuilder:
 
         return final_paths[end]
 
-class SurfaceCodeBuilder(CircuitBuilder):
-    """
-    QuantumCircuit builder for surface code constrained by the given SquareLattice
-    """
-    def __init__ (self, lattice):
-        assert isinstance(lattice, SquareLattice)
-        super().__init__(lattice)
+# class SurfaceCodeBuilder(ConstrainedQuantumCircuit):
+#     """
+#     QuantumCircuit builder for surface code constrained by the given SquareLattice
+#     """
+#     def __init__ (self, lattice):
+#         assert isinstance(lattice, SquareLattice)
+#         super().__init__(lattice)
 
-    def _build(self, num_cycles=1):
-        """
-        Returns the surface code QuantumCircuit depending on the number of cycles specified
-        :param num_cycles: Number of full cycles the surface code will be runned.
-        """
-        num_nodes = len(self.lattice.nodes)
+#     def _build(self, num_cycles=1):
+#         """
+#         Returns the surface code QuantumCircuit depending on the number of cycles specified
+#         :param num_cycles: Number of full cycles the surface code will be runned.
+#         """
+#         num_nodes = len(self.lattice.nodes)
 
-        for j in range(num_cycles):
-            # For every cycle add a classical register so we can track the changes in the surface code
-            self.add_register(ClassicalRegister(num_nodes))
+#         for j in range(num_cycles):
+#             # For every cycle add a classical register so we can track the changes in the surface code
+#             self.add_register(ClassicalRegister(num_nodes))
 
-            # Iterate through names of nodes in square lattice
-            # TODO Change lattice.node structure to contain tuples or be a dictionary
-            for i in self.lattice.graph.keys():
-                node = self.lattice.nodes[i]
+#             # Iterate through names of nodes in square lattice
+#             # TODO Change lattice.node structure to contain tuples or be a dictionary
+#             for i in self.lattice.graph.keys():
+#                 node = self.lattice.nodes[i]
 
-                # If node is ZNode add measure_z circuit cycle
-                if type(node) == ZNode:
-                    self._measure_z(i, i + j * num_nodes, self.lattice.graph[i])
+#                 # If node is ZNode add measure_z circuit cycle
+#                 if type(node) == ZNode:
+#                     self._measure_z(i, i + j * num_nodes, self.lattice.graph[i])
 
-                # If node is ZNode add measure_x circuit cycle
-                elif type(node) == XNode:
-                    self._measure_x(i, i + j * num_nodes, self.lattice.graph[i])
+#                 # If node is ZNode add measure_x circuit cycle
+#                 elif type(node) == XNode:
+#                     self._measure_x(i, i + j * num_nodes, self.lattice.graph[i])
 
-                # No else statement just in case node is a BaseNode and we strictly want to act on ZNode and XNode
+#                 # No else statement just in case node is a BaseNode and we strictly want to act on ZNode and XNode
 
-            # Barrier for preventing overlap in gates
-            self.barrier()
+#             # Barrier for preventing overlap in gates
+#             self.barrier()
 
-        return super()._build()
+#         return super()._build()
 
-    def _measure_z(self, qZ, c, qData=[]):
-        """
-        Meausure Z quantum circuit cycle that is appended to the QuantumCircuit in the builder
-        """
-        assert type(qZ) is not list, "You must only give one Measure Z qubit"
-        assert type(qData) is list, "You must give a list of data qubits"
+#     def _measure_z(self, qZ, c, qData=[]):
+#         """
+#         Meausure Z quantum circuit cycle that is appended to the QuantumCircuit in the builder
+#         """
+#         assert type(qZ) is not list, "You must only give one Measure Z qubit"
+#         assert type(qData) is list, "You must give a list of data qubits"
 
-        self.barrier()
-        self.id([qZ])
-        self.reset([qZ])
-        for i in qData:
-            self.cx(i, qZ)
+#         self.barrier()
+#         self.id([qZ])
+#         self.reset([qZ])
+#         for i in qData:
+#             self.cx(i, qZ)
 
-        self.measure([qZ], [c])
-        self.id([qZ])
-        self.barrier()
+#         self.measure([qZ], [c])
+#         self.id([qZ])
+#         self.barrier()
 
-    def _measure_x(self, qX, c, qData=[]):
-        """
-        Meausure X quantum circuit cycle that is appended to the QuantumCircuit in the builder
-        """
-        assert type(qX) is not list, "You must only give one Measure X qubit"
-        assert type(qData) is list, "You must give a list of data qubits"
+#     def _measure_x(self, qX, c, qData=[]):
+#         """
+#         Meausure X quantum circuit cycle that is appended to the QuantumCircuit in the builder
+#         """
+#         assert type(qX) is not list, "You must only give one Measure X qubit"
+#         assert type(qData) is list, "You must give a list of data qubits"
         
-        self.barrier()
-        self.reset([qX])
-        self.h([qX])
-        for i in qData:
-            self.cx(qX, i)
+#         self.barrier()
+#         self.reset([qX])
+#         self.h([qX])
+#         for i in qData:
+#             self.cx(qX, i)
 
-        self.h([qX])
-        self.measure([qX], [c])
-        self.barrier()
+#         self.h([qX])
+#         self.measure([qX], [c])
+#         self.barrier()
