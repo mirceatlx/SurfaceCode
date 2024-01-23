@@ -61,7 +61,7 @@ class SurfaceCodeCycle(BaseCycle):
         assert type(qZ) is not list, "You must only give one Measure Z qubit"
 
         activeNeighbours = []
-        for k in self.lattice.graph[i]:
+        for k in self.lattice.graph[qZ]:
             if k.active == True:
                 activeNeighbours.append(k.node)
 
@@ -70,7 +70,7 @@ class SurfaceCodeCycle(BaseCycle):
         qc.id([qZ])
         qc.reset([qZ])
         for i in activeNeighbours:
-            qc.cx(i.node, qZ)
+            qc.cx(i, qZ)
 
         qc.measure([qZ], [0])
         qc.id([qZ])
@@ -84,7 +84,7 @@ class SurfaceCodeCycle(BaseCycle):
         assert type(qX) is not list, "You must only give one Measure X qubit"
 
         activeNeighbours = []
-        for k in self.lattice.graph[i]:
+        for k in self.lattice.graph[qX]:
             if k.active == True:
                 activeNeighbours.append(k.node)
         qc = ConstrainedQuantumCircuit(self.lattice, self.num_nodes, 1)
@@ -92,7 +92,7 @@ class SurfaceCodeCycle(BaseCycle):
         qc.reset([qX])
         qc.h([qX])
         for i in activeNeighbours:
-            qc.cx(qX, i.node)
+            qc.cx(qX, i)
 
         qc.h([qX])
         qc.measure([qX], [0])
