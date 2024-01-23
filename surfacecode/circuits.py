@@ -11,8 +11,7 @@ class ConstrainedQuantumCircuit(QuantumCircuit):
     def __init__(self, lattice, *regs, name=None, global_phase=0, metadata=None):
         assert isinstance(lattice, BaseLattice)
         self.lattice = lattice
-        print(*regs)
-
+        
         qnum = 0
         for reg in regs:
             if type(reg) is int:
@@ -24,6 +23,7 @@ class ConstrainedQuantumCircuit(QuantumCircuit):
                 qnum += reg.size
 
         
+        # Giver a warning if number qubits and lattice number of nodes do not match
         if qnum != len(lattice.nodes):
             warnings.warn("Number of qubits and number of nodes in lattice do not match")
 
@@ -96,75 +96,3 @@ class ConstrainedQuantumCircuit(QuantumCircuit):
 
         return final_paths[end]
 
-# class SurfaceCodeBuilder(ConstrainedQuantumCircuit):
-#     """
-#     QuantumCircuit builder for surface code constrained by the given SquareLattice
-#     """
-#     def __init__ (self, lattice):
-#         assert isinstance(lattice, SquareLattice)
-#         super().__init__(lattice)
-
-#     def _build(self, num_cycles=1):
-#         """
-#         Returns the surface code QuantumCircuit depending on the number of cycles specified
-#         :param num_cycles: Number of full cycles the surface code will be runned.
-#         """
-#         num_nodes = len(self.lattice.nodes)
-
-#         for j in range(num_cycles):
-#             # For every cycle add a classical register so we can track the changes in the surface code
-#             self.add_register(ClassicalRegister(num_nodes))
-
-#             # Iterate through names of nodes in square lattice
-#             # TODO Change lattice.node structure to contain tuples or be a dictionary
-#             for i in self.lattice.graph.keys():
-#                 node = self.lattice.nodes[i]
-
-#                 # If node is ZNode add measure_z circuit cycle
-#                 if type(node) == ZNode:
-#                     self._measure_z(i, i + j * num_nodes, self.lattice.graph[i])
-
-#                 # If node is ZNode add measure_x circuit cycle
-#                 elif type(node) == XNode:
-#                     self._measure_x(i, i + j * num_nodes, self.lattice.graph[i])
-
-#                 # No else statement just in case node is a BaseNode and we strictly want to act on ZNode and XNode
-
-#             # Barrier for preventing overlap in gates
-#             self.barrier()
-
-#         return super()._build()
-
-#     def _measure_z(self, qZ, c, qData=[]):
-#         """
-#         Meausure Z quantum circuit cycle that is appended to the QuantumCircuit in the builder
-#         """
-#         assert type(qZ) is not list, "You must only give one Measure Z qubit"
-#         assert type(qData) is list, "You must give a list of data qubits"
-
-#         self.barrier()
-#         self.id([qZ])
-#         self.reset([qZ])
-#         for i in qData:
-#             self.cx(i, qZ)
-
-#         self.measure([qZ], [c])
-#         self.id([qZ])
-#         self.barrier()
-
-#     def _measure_x(self, qX, c, qData=[]):
-#         """
-#         Meausure X quantum circuit cycle that is appended to the QuantumCircuit in the builder
-#         """
-#         assert type(qX) is not list, "You must only give one Measure X qubit"
-#         assert type(qData) is list, "You must give a list of data qubits"
-        
-#         self.barrier()
-#         self.reset([qX])
-#         self.h([qX])
-#         for i in qData:
-#             self.cx(qX, i)
-
-#         self.h([qX])
-#         self.measure([qX], [c])
-#         self.barrier()
