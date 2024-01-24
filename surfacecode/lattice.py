@@ -105,7 +105,7 @@ class HeavyHexLattice(BaseLattice):
 
         # Formula for number of nodes for HeavyHexLattice given a distance
         self.distance = distance
-        self.nodes_num = int((5*distance**2- 2*distance - 1) / 2)
+        self.num_nodes = int((5*distance**2- 2*distance - 1) / 2)
         self.flag_data_column_length = int(distance * 2 - 1)
         self.ancilla_column_length = (distance + 1) // 2
 
@@ -148,7 +148,7 @@ class HeavyHexLattice(BaseLattice):
         # Add data, flag, ancilla nodes
         col = 0
         itr = 0
-        for i in range(self.nodes_num):
+        for i in range(self.num_nodes):
             # If we are on data flag node column
             if col % 2 == 0:
                 if itr % 2 == 0:
@@ -184,7 +184,7 @@ class HeavyHexLattice(BaseLattice):
         col = 0
         itr = 0
         # Connect data and flag nodes
-        for i in range(self.nodes_num):
+        for i in range(self.num_nodes):
             edges = []
             # If we are on data flag node column
             if col % 2 == 0:
@@ -221,7 +221,7 @@ class HeavyHexLattice(BaseLattice):
         col = 0
         itr = 0
         # Connect ancilla nodes to data, flag nodes and vice versa
-        for i in range(self.nodes_num):
+        for i in range(self.num_nodes):
             edges = []
             #If we are on ancilla node column
             if col % 2 == 1:
