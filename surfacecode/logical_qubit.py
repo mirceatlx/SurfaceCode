@@ -71,13 +71,13 @@ class LQubit:
 
         for i in route:
             self.lattice._switch_node(i, False)
-        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2), len(route) // 2 + num_nodes // 2))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes // 2)))
 
         for i in data_qubits:
             if self.type:
-                qc.x(i)
+                qc.h(i)
                 qc.measure([i], [reg])
-                qc.x(i)
+                qc.h(i)
             else:
                 qc.measure([i], [reg])
             reg = reg + 1
@@ -99,9 +99,9 @@ class LQubit:
 
         for i in data_qubits:
             if self.type:
-                qc.x(i)
+                qc.h(i)
                 qc.measure([i], [reg])
-                qc.x(i)
+                qc.h(i)
             else:
                 qc.measure([i], [reg])
             reg = reg + 1
@@ -157,10 +157,10 @@ class LQubit:
         route = self.route(start, end)
         num_nodes = len(self.lattice.nodes)
         qc = QuantumCircuit(num_nodes, 3 * (num_nodes // 2) + len(route) // 2)
-        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2), len(route) // 2 + num_nodes // 2))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes // 2)))
         for i in route:
             self.lattice._switch_node(i, False)
-        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2) + num_nodes // 2, len(route) // 2 + 2 * (num_nodes // 2)))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + num_nodes // 2, len(route) // 2 + 2 * (num_nodes // 2))))
 
         data_qubits = route[1::2]
         register = 0
@@ -176,7 +176,7 @@ class LQubit:
         route.pop()
         for i in route:
             self.lattice._switch_node(i, True)
-        qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route // 2)) + 2 * (num_nodes // 2), len(route // 2) + 3 * (num_nodes // 2)))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + 2 * (num_nodes // 2), len(route) // 2 + 3 * (num_nodes // 2))))
         qc.barrier()
         return qc
 
