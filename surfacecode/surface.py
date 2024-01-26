@@ -118,16 +118,20 @@ class HeavyHexCode(BaseCycle):
         for j in range(num_cycles):
             # For every cycle add a classical register so we can track the changes in the heavy hex code
             qc.add_register(ClassicalRegister(num_nodes))
+            qc.barrier()
 
             for step in range(1, 12):
             # Iterate through names of nodes in heavy hex lattice
             # TODO Change lattice.node structure to contain tuples or be a dictionary
+                if step == 9:
+                    qc.barrier()
+
                 for i in self.lattice.graph.keys():
                     node = self.lattice.nodes[i]
                     classicalBitLoc = i + j * num_nodes
 
                     # If node is AncillaNode add measure_x circuit cycle
-                    if type(node) == AncillaNode:
+                    if type(node) is AncillaNode:
                         neighbour1 = self.lattice.graph[i][0].node
                         neighbour2 = self.lattice.graph[i][1].node
 
@@ -141,14 +145,14 @@ class HeavyHexCode(BaseCycle):
                             classicalBit2 =  neighbour2 + j * num_nodes
                             qc = qc.compose(self._measure_x_4(i, step), range(num_nodes), [classicalBit1, classicalBit2, classicalBitLoc])
 
-                        # If node is FlagNode add measure_z circuit cycle
-                        if type(node) == FlagNode:
-                            # print(i)
-                            qc = qc.compose(self._measure_z_left(i, step), range(num_nodes), [classicalBitLoc])
-                            qc = qc.compose(self._measure_z_right(i, step), range(num_nodes), [classicalBitLoc])
+                    # If node is FlagNode add measure_z circuit cycle
+                    if type(node) is FlagNode:
+                        qc = qc.compose(self._measure_z_left(i, step), range(num_nodes), [classicalBitLoc])
+                        qc = qc.compose(self._measure_z_right(i, step), range(num_nodes), [classicalBitLoc])
 
                     #     print(neighbour1, neighbour2, i)
                 
+                # Barrier between steps
                 qc.barrier()
                             
 
@@ -179,11 +183,13 @@ class HeavyHexCode(BaseCycle):
         if step == 1:
             #Initialize in Z basis
             qc.reset(qX)
+            qc.h(qX)
         if step == 4:
             qc.cx(qX, dataNeighbours[1])
         if step == 5:
             qc.cx(qX, dataNeighbours[0])
-        if step == 6:
+        if step == 7:
+            qc.h([qX])
             qc.measure([qX], 0)
 
         # return qc.to_instruction(label="measure_x_2")
@@ -207,11 +213,13 @@ class HeavyHexCode(BaseCycle):
         if step == 1:
             #Initialize in Z basis
             qc.reset(qX)
+            qc.h([qX])
         if step == 5:
             qc.cx(qX, dataNeighbours[1])
         if step == 6:
             qc.cx(qX, dataNeighbours[0])
         if step == 7:
+            qc.h([qX])
             qc.measure([qX], 0)
 
         # return qc.to_instruction(label="measure_x_2")
@@ -252,8 +260,8 @@ class HeavyHexCode(BaseCycle):
             qc.reset(flagNeighbours[1])
         if step == 2:
             # qc.barrier()
-            qc.reset(flagNeighbours[0])
             qc.cx(qX, flagNeighbours[1])
+            qc.reset(flagNeighbours[0])
         if step == 3:
             # qc.barrier()
             qc.cx(qX, flagNeighbours[0])
@@ -270,8 +278,8 @@ class HeavyHexCode(BaseCycle):
         if step == 6:
             # qc.barrier()
             qc.cx(qX, flagNeighbours[0])
-            qc.measure(flagNeighbours[1], [1])
         if step == 7:
+            qc.measure(flagNeighbours[1], [1])
             # qc.barrier()
             qc.measure(flagNeighbours[0], [0])
             # Measure in X basis
@@ -298,28 +306,30 @@ class HeavyHexCode(BaseCycle):
         ancillaNeighbours = []
         for k in self.lattice.graph[qZ]:
             if type(self.lattice.nodes[k.node]) is AncillaNode:
-                ancillaNeighbours.append[k.node]
+                ancillaNeighbours.append(k.node)
 
             if k.active == True and type(self.lattice.nodes[k.node]) is not AncillaNode:
                 dataNeighbours.append(k.node)
                 assert type(self.lattice.nodes[k.node]) is DataNode
 
-        assert len(ancillaNeighbours) == 1
+        assert len(ancillaNeighbours) <= 1
 
         
         qc = ConstrainedQuantumCircuit(self.lattice, self.num_nodes, 1)
 
         # Check if qZ is right of ancillas
-        if (qZ < self.lattice.flag_data_column_length and len(ancillaNeighbours) == 0) or ancillaNeighbours[0] < qZ:
-
-            if step == 8:
-                #Initialize in Z basis
-                qc.reset(qZ)
-                qc.cx(dataNeighbours[0], qZ)
-            if step == 9:
-                qc.cx(dataNeighbours[1], qZ)
-            if step == 10:
-                qc.measure([qZ], 0)
+        if len(ancillaNeighbours) == 0 and qZ > self.lattice.flag_data_column_length:
+            return qc
+        if len(ancillaNeighbours) > 0 and ancillaNeighbours[0] > qZ:
+            return qc
+        if step == 8:
+            #Initialize in Z basis
+            qc.reset(qZ)
+            qc.cx(dataNeighbours[0], qZ)
+        if step == 9:
+            qc.cx(dataNeighbours[1], qZ)
+        if step == 11:
+            qc.measure([qZ], 0)
 
         return qc
         # return qc.to_instruction(label="measure_z")
@@ -340,27 +350,33 @@ class HeavyHexCode(BaseCycle):
         ancillaNeighbours = []
         for k in self.lattice.graph[qZ]:
             if type(self.lattice.nodes[k.node]) is AncillaNode:
-                ancillaNeighbours.append[k.node]
+                ancillaNeighbours.append(k.node)
 
             if k.active == True and type(self.lattice.nodes[k.node]) is not AncillaNode:
                 dataNeighbours.append(k.node)
                 assert type(self.lattice.nodes[k.node]) is DataNode
 
-        assert len(ancillaNeighbours) == 1
+        assert len(ancillaNeighbours) <= 1
 
         
         qc = ConstrainedQuantumCircuit(self.lattice, self.num_nodes, 1)
 
         # Check if qZ is LEFT of ancillas
-        if (qZ > self.lattice.flag_data_column_length and len(ancillaNeighbours) == 0) or ancillaNeighbours[0] > qZ:
-            if step == 9:
-                #Initialize in Z basis
-                qc.reset(qZ)
-                qc.cx(dataNeighbours[1], qZ)
-            if step == 10:
-                qc.cx(dataNeighbours[0], qZ)
-            if step == 11:
-                qc.measure([qZ], 0)
+        if len(ancillaNeighbours) == 0 and qZ < self.lattice.flag_data_column_length:
+            return qc
+        if len(ancillaNeighbours) > 0 and ancillaNeighbours[0] < qZ:
+            return qc
+        
+        if step == 8:
+            #Initialize in Z basis
+            qc.reset(qZ)
+
+        if step == 9:
+            qc.cx(dataNeighbours[1], qZ)
+        if step == 10:
+            qc.cx(dataNeighbours[0], qZ)
+        if step == 11:
+            qc.measure([qZ], 0)
 
         return qc
         # return qc.to_instruction(label="measure_z")
