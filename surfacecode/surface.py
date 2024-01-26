@@ -1,6 +1,6 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from surfacecode.nodes import ZNode, XNode, DataNode, BaseNode, FlagNode, AncillaNode, FlagNode, AncillaNode
-from surfacecode.lattice import SquareLattice, HeavyHexLattice, HeavyHexLattice
+from surfacecode.lattice import SquareLattice, HeavyHexLattice, HeavyHexLattice, BaseLattice, Edge
 from surfacecode.circuits import ConstrainedQuantumCircuit
 
 class BaseCycle:
@@ -210,15 +210,15 @@ class HeavyHexCode(BaseCycle):
         if type(self.lattice.nodes[qX + 1]) is not DataNode:
             return qc
         
-        if step == 1:
+        if step == 5:
             #Initialize in Z basis
             qc.reset(qX)
             qc.h([qX])
-        if step == 5:
+        if step == 9:
             qc.cx(qX, dataNeighbours[1])
-        if step == 6:
+        if step == 10:
             qc.cx(qX, dataNeighbours[0])
-        if step == 7:
+        if step == 11:
             qc.h([qX])
             qc.measure([qX], 0)
 
@@ -252,36 +252,37 @@ class HeavyHexCode(BaseCycle):
 
         qc = ConstrainedQuantumCircuit(self.lattice, self.num_nodes, 3)
 
-        if step == 1:
+        if step == 5:
             #Initialize in X basis
             qc.reset([qX])
             qc.h([qX])
             #Initialize in Z basis
             qc.reset(flagNeighbours[1])
-        if step == 2:
+            qc.reset(flagNeighbours[0])
+        if step == 6:
             # qc.barrier()
             qc.cx(qX, flagNeighbours[1])
-            qc.reset(flagNeighbours[0])
-        if step == 3:
+
+        if step == 7:
             # qc.barrier()
             qc.cx(qX, flagNeighbours[0])
             # I think order matters check Fig 4 of the heavy hex code paper by ibm
             qc.cx(flagNeighbours[1], dataNeighbours[2])
-        if step == 4:
+        if step == 8:
             # qc.barrier()
             qc.cx(flagNeighbours[0], dataNeighbours[1])
             qc.cx(flagNeighbours[1], dataNeighbours[3])
-        if step ==5:
+        if step == 9:
             # qc.barrier()
             qc.cx(flagNeighbours[0], dataNeighbours[0])
             qc.cx(qX, flagNeighbours[1])
-        if step == 6:
+        if step == 10:
             # qc.barrier()
             qc.cx(qX, flagNeighbours[0])
-        if step == 7:
-            qc.measure(flagNeighbours[1], [1])
-            # qc.barrier()
-            qc.measure(flagNeighbours[0], [0])
+        if step == 11:
+            # qc.measure(flagNeighbours[1], [1])
+            # # qc.barrier()
+            # qc.measure(flagNeighbours[0], [0])
             # Measure in X basis
             qc.h([qX])
             qc.measure([qX], [2])
@@ -322,13 +323,13 @@ class HeavyHexCode(BaseCycle):
             return qc
         if len(ancillaNeighbours) > 0 and ancillaNeighbours[0] > qZ:
             return qc
-        if step == 8:
+        if step == 1:
             #Initialize in Z basis
             qc.reset(qZ)
             qc.cx(dataNeighbours[0], qZ)
-        if step == 9:
+        if step == 2:
             qc.cx(dataNeighbours[1], qZ)
-        if step == 11:
+        if step == 4:
             qc.measure([qZ], 0)
 
         return qc
@@ -367,16 +368,149 @@ class HeavyHexCode(BaseCycle):
         if len(ancillaNeighbours) > 0 and ancillaNeighbours[0] < qZ:
             return qc
         
-        if step == 8:
+        if step == 1:
             #Initialize in Z basis
             qc.reset(qZ)
 
-        if step == 9:
+        if step == 2:
             qc.cx(dataNeighbours[1], qZ)
-        if step == 10:
+        if step == 3:
             qc.cx(dataNeighbours[0], qZ)
-        if step == 11:
+        if step == 4:
             qc.measure([qZ], 0)
 
         return qc
         # return qc.to_instruction(label="measure_z")
+    
+class HeavyHexCode3(BaseCycle):
+
+    def __init__(self):
+        num_data = 9
+        num_flag = 10
+        num_ancilla = 4
+        nodes = []
+        # Data nodes are in front of list
+        for i in range(0, num_data):
+            nodes.append(DataNode())
+
+        # Flag nodes are in middle of list
+        for i in range(num_data, num_data + num_flag):
+            nodes.append(FlagNode())
+
+        # Ancilla nodes are at back of list
+        for i in range(num_data + num_flag, num_data + num_flag + num_ancilla):
+            nodes.append(AncillaNode())
+
+        graph = {}
+        graph[0] = [9, 10]
+        graph[1] = [10, 11]
+        graph[2] = [11]
+        graph[3] = [12, 13]
+        graph[4] = [13, 14]
+        graph[5] = [14, 15]
+        graph[6] = [16]
+        graph[7] = [16, 17]
+        graph[8] = [17, 18]
+        graph[9] = [0, 19]
+        graph[10] = [0, 1]
+        graph[11] = [1, 2, 20]
+        graph[12] = [3, 19]
+        graph[13] = [3, 4, 21]
+        graph[14] = [4, 5, 20]
+        graph[15] = [5, 22]
+        graph[16] = [6, 7, 21]
+        graph[17] = [7, 8]
+        graph[18] = [8, 22]
+        graph[19] = [9, 12]
+        graph[20] = [11, 14]
+        graph[21] = [13, 16]
+        graph[22] = [15, 18]
+
+        for i in graph:
+            edges = []
+            old_list = graph[i]
+            for j in old_list:
+                edges.append(Edge(j))
+            graph[i] = edges    
+        
+        lattice = BaseLattice(nodes, graph)
+        lattice.num_nodes = num_data + num_flag + num_ancilla
+        lattice.num_data = num_data
+        lattice.num_flag = num_flag
+        lattice.num_ancilla = num_ancilla       
+        super().__init__(lattice)
+
+    def _circuit(self, num_cycles = 1):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes)
+
+        for i in range(num_cycles):
+            classicalRegX = ClassicalRegister(6)
+            classicalRegZ = ClassicalRegister(4 + 8)
+            qc.add_register(classicalRegX)
+            qc.add_register(classicalRegZ)
+
+            qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), classicalRegX)
+            qc.barrier()
+            qc = qc.compose(self._z_stabilizer(), range(self.lattice.num_nodes), classicalRegZ)
+            
+
+        return qc
+    
+    def _x_stabilizer(self):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes, 6)
+
+        flag_nodes = [10, 11, 13, 14, 16, 17]
+        qc.h(flag_nodes)
+
+        for i in flag_nodes:
+            qc.cx(i, i - 10)
+
+        for i in flag_nodes:
+            qc.cx(i, i - 9)
+
+        qc.h(flag_nodes)
+
+        qc.barrier()
+        qc.measure(flag_nodes, range(6))
+        qc.reset(flag_nodes)
+        qc.barrier()
+
+        return qc
+
+    def _z_stabilizer(self):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes, 12)
+
+        flag_nodes = [9, 11, 12, 13, 14, 15, 16, 18]
+        ancilla_nodes = [19, 20, 21, 22]
+        qc.h(flag_nodes)
+        for i in ancilla_nodes:
+            qc.cx(self.lattice.graph[i][1].node, i)
+
+
+        for i in ancilla_nodes:
+            qc.cx(self.lattice.graph[i][0].node, i)
+
+
+        for i in [14, 16, 18]:
+            qc.cx(i - 10, i)
+
+
+        for i in [9, 11, 12, 13, 14, 16]:
+            qc.cx(i - 9, i)
+
+        for i in ancilla_nodes:
+            qc.cx(self.lattice.graph[i][1].node, i)
+
+        for i in ancilla_nodes:
+            qc.cx(self.lattice.graph[i][0].node, i)
+
+        qc.h(flag_nodes)
+
+        qc.barrier()
+        qc.measure(ancilla_nodes, range(4))
+        qc.measure(flag_nodes, range(4, 12))
+
+        qc.reset(flag_nodes + ancilla_nodes)
+
+        qc.barrier()
+        return qc
