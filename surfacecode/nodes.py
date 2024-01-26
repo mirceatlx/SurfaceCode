@@ -14,3 +14,11 @@ class XNode(BaseNode):
 class DataNode(BaseNode):
     def __init__(self):
         pass
+
+class FlagNode(BaseNode):
+    def __init__(self):
+        pass
+
+class AncillaNode(BaseNode):
+    def _init__(self):
+        pass
