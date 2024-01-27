@@ -14,30 +14,26 @@ class LQubit:
         num_nodes = len(self.lattice.nodes)
         c = ClassicalRegister(1)
         qc = ConstrainedQuantumCircuit(self.lattice, QuantumRegister(num_nodes), c)
-        self.lattice._switch_node(self.m_node, False)
-        self.lattice._switch_node(self.a_node, False)
         if self.type:
-            qc.cx(self.m_node + 1, self.m_node)
-            qc.cx(self.m_node - 1, self.m_node)
-            qc.cx(self.m_node + self.lattice.width, self.m_node)
-            qc.cx(self.m_node - self.lattice.width, self.m_node)
+            for i in self.lattice.graph[self.m_node]:
+                qc.cx(i.node, self.m_node)
         else:
             qc.h(self.m_node)
-            qc.cx(self.m_node, self.m_node + 1)
-            qc.cx(self.m_node, self.m_node - 1)
-            qc.cx(self.m_node, self.m_node + self.lattice.width)
-            qc.cx(self.m_node, self.m_node - self.lattice.width)
+            for i in self.lattice.graph[self.m_node]:
+                qc.cx(self.m_node, i.node)
             qc.h(self.m_node)
+        self.lattice._switch_node(self.m_node, False)
+        self.lattice._switch_node(self.a_node, False)
         qc.measure([self.m_node],c)
-        # dynamic circuit part, not supported by the simulator
-        # with qc.if_test((c, 1)):
-        #     route = self.route(self.m_node, self.a_node)
-        #     data_qubits = route[1::2]
-        #     for i in data_qubits:
-        #         if self.type:
-        #             qc.x(i)
-        #         else:
-        #             qc.z(i)
+        # dynamic circuit part, not supported by the ibm platform simulator
+        with qc.if_test((c, 1)):
+            route = self.route(self.m_node, self.a_node)
+            data_qubits = route[1::2]
+            for i in data_qubits:
+                if self.type:
+                    qc.x(i)
+                else:
+                    qc.z(i)
         qc.barrier()
         return qc
 
@@ -45,17 +41,15 @@ class LQubit:
         num_nodes = len(self.lattice.nodes)
         c = ClassicalRegister(1)
         qc = ConstrainedQuantumCircuit(self.lattice, QuantumRegister(num_nodes), c)
+        self.lattice._switch_node(self.m_node, True)
+        self.lattice._switch_node(self.a_node, True)
         if self.type:
-            qc.cx(self.m_node + 1, self.m_node)
-            qc.cx(self.m_node - 1, self.m_node)
-            qc.cx(self.m_node + self.lattice.width, self.m_node)
-            qc.cx(self.m_node - self.lattice.width, self.m_node)
+            for i in self.lattice.graph[self.m_node]:
+                qc.cx(i.node, self.m_node)
         else:
             qc.h(self.m_node)
-            qc.cx(self.m_node, self.m_node + 1)
-            qc.cx(self.m_node, self.m_node - 1)
-            qc.cx(self.m_node, self.m_node + self.lattice.width)
-            qc.cx(self.m_node, self.m_node - self.lattice.width)
+            for i in self.lattice.graph[self.m_node]:
+                qc.cx(self.m_node, i.node)
             qc.h(self.m_node)
         qc.measure([self.m_node],c)
         self.lattice._switch_node(self.m_node, True)
@@ -66,13 +60,13 @@ class LQubit:
     def alt_initialize(self, cycle):
         route = self.route(self.m_node, self.a_node)
         num_nodes = len(self.lattice.nodes)
-        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, len(route) // 2 + num_nodes // 2)
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, num_nodes + len(route) // 2)
         reg = 0
         data_qubits = route[1::2]
 
         for i in route:
             self.lattice._switch_node(i, False)
-        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes // 2)))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes)))
 
         for i in data_qubits:
             if self.type:
@@ -82,6 +76,10 @@ class LQubit:
             else:
                 qc.measure([i], [reg])
             reg = reg + 1
+
+        # with qc.switch(data_qubits) as case:
+        #     with case(0, 1, 6, 7):
+        #         circuit.x(0)
 
         for i in route:
             self.lattice._switch_node(i, True)
@@ -157,11 +155,11 @@ class LQubit:
     def move_cell(self, cycle, start, end):
         route = self.route(start, end)
         num_nodes = len(self.lattice.nodes)
-        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, 3 * (num_nodes // 2) + len(route) // 2)
-        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes // 2)))
+        qc = ConstrainedQuantumCircuit(self.lattice, num_nodes, 3 * num_nodes + len(route) // 2)
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2, len(route) // 2 + num_nodes)))
         for i in route:
             self.lattice._switch_node(i, False)
-        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + num_nodes // 2, len(route) // 2 + 2 * (num_nodes // 2))))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + num_nodes, len(route) // 2 + 2 * num_nodes)))
 
         data_qubits = route[1::2]
         register = 0
@@ -177,8 +175,9 @@ class LQubit:
         route.pop()
         for i in route:
             self.lattice._switch_node(i, True)
-        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + 2 * (num_nodes // 2), len(route) // 2 + 3 * (num_nodes // 2))))
+        qc = qc.compose(cycle._circuit(1), list(range(num_nodes)), list(range(len(route) // 2 + 2 * num_nodes, len(route) // 2 + 3 * num_nodes)))
         qc.barrier()
+        self.m_node = end
         return qc
 
     # by default, it will move on the x-axis first if possible, and then move on the y-axis
