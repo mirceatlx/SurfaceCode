@@ -439,22 +439,188 @@ class HeavyHexCode3(BaseCycle):
         lattice.num_flag = num_flag
         lattice.num_ancilla = num_ancilla       
         super().__init__(lattice)
-
-    def _circuit(self, num_cycles = 1):
+    
+    def _initialize(self):
         qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes)
+        initializationRegX = ClassicalRegister(6)
+        initializationRegZ = ClassicalRegister(12)
+        qc.add_register(initializationRegX)
+        qc.add_register(initializationRegZ)
+
+        # # Initialize in 0 state by measuring X gauge
+        # qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), initializationReg)
+        itr = 0
+        for node in self.lattice.graph:
+            if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [initializationRegX[itr]])
+                itr += 1
+        qc.barrier()
+
+        for i in range(3):
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is AncillaNode:
+                    qc = qc.compose(self.z_gauge(node), range(self.lattice.num_nodes), [initializationRegZ[2*itr + 4], initializationRegZ[2*itr + 5], initializationRegZ[itr]])
+                    itr += 1
+            qc.barrier()
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                    qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [initializationRegX[itr]])
+                    itr += 1
+
+        qc.barrier()
+
+        return qc
+    
+    def _initialize_circuit(self, num_cycles = 1):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes)
+        initializationRegX = ClassicalRegister(6)
+        initializationRegZ = ClassicalRegister(12)
+        qc.add_register(initializationRegX)
+        qc.add_register(initializationRegZ)
+
+        # # Initialize in 0 state by measuring X gauge
+        # qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), initializationReg)
+        itr = 0
+        for node in self.lattice.graph:
+            if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [initializationRegX[itr]])
+                itr += 1
+        qc.barrier()
+
+        for i in range(3):
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is AncillaNode:
+                    qc = qc.compose(self.z_gauge(node), range(self.lattice.num_nodes), [initializationRegZ[2*itr + 4], initializationRegZ[2*itr + 5], initializationRegZ[itr]])
+                    itr += 1
+            qc.barrier()
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                    qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [initializationRegX[itr]])
+                    itr += 1
+
+        qc.barrier()
 
         for i in range(num_cycles):
             classicalRegX = ClassicalRegister(6)
             classicalRegZ = ClassicalRegister(4 + 8)
-            qc.add_register(classicalRegX)
             qc.add_register(classicalRegZ)
+            qc.add_register(classicalRegX)
 
-            qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), classicalRegX)
+            # qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), classicalRegX)
+            # # qc = qc.compose(self._z_stabilizer(), range(self.lattice.num_nodes), classicalRegZ)
+            # qc.barrier()
+
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is AncillaNode:
+                    qc = qc.compose(self.z_gauge(node), range(self.lattice.num_nodes), [classicalRegZ[2*itr + 4], classicalRegZ[2*itr + 5], classicalRegZ[itr]])
+                    itr += 1
             qc.barrier()
-            qc = qc.compose(self._z_stabilizer(), range(self.lattice.num_nodes), classicalRegZ)
-            
+
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                    qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [classicalRegX[itr]])
+                    itr += 1
+
+            qc.barrier()
 
         return qc
+
+    def _circuit(self, num_cycles = 1):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes)
+        # initializationReg = ClassicalRegister(6)
+        # qc.add_register(initializationReg)
+
+        # # # Initialize in 0 state by measuring X gauge
+        # # qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), initializationReg)
+        # itr = 0
+        # for node in self.lattice.graph:
+        #     if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+        #         qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [initializationReg[itr]])
+        #         itr += 1
+
+        # qc.barrier()
+
+        for i in range(num_cycles):
+            classicalRegX = ClassicalRegister(6)
+            classicalRegZ = ClassicalRegister(4 + 8)
+            qc.add_register(classicalRegZ)
+            qc.add_register(classicalRegX)
+
+            # qc = qc.compose(self._x_stabilizer(), range(self.lattice.num_nodes), classicalRegX)
+            # # qc = qc.compose(self._z_stabilizer(), range(self.lattice.num_nodes), classicalRegZ)
+            # qc.barrier()
+
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is AncillaNode:
+                    qc = qc.compose(self.z_gauge(node), range(self.lattice.num_nodes), [classicalRegZ[2*itr + 4], classicalRegZ[2*itr + 5], classicalRegZ[itr]])
+                    itr += 1
+            qc.barrier()
+
+            itr = 0
+            for node in self.lattice.graph:
+                if type(self.lattice.nodes[node]) is FlagNode and node not in [9,12,15,18]:
+                    qc = qc.compose(self.x_gauge(node), range(self.lattice.num_nodes), [classicalRegX[itr]])
+                    itr += 1
+
+            qc.barrier()
+            
+        return qc
+    
+    def x_gauge(self, flag):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes, 1)
+        flagNeighbours = []
+        for edge in self.lattice.graph[flag]:
+            if type(self.lattice.nodes[edge.node]) is DataNode:
+                flagNeighbours.append(edge.node)
+
+        qc.reset([flag])
+        qc.h([flag])
+        for neighbour in flagNeighbours:
+            qc.cx(flag, neighbour)
+        
+        qc.h([flag])
+        qc.measure([flag], [0])
+
+        return qc.to_instruction(label="x gauge")
+    
+    def z_gauge(self, ancilla):
+        qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes, 3)
+        flags = []
+        data = []
+        for edge in self.lattice.graph[ancilla]:
+            if type(self.lattice.nodes[edge.node]) is FlagNode:
+                flags.append(edge.node)
+
+        for flag in flags:
+            for edge in self.lattice.graph[flag]:
+                if type(self.lattice.nodes[edge.node]) is DataNode:
+                    data.append(edge.node)
+
+        qc.reset([ancilla])
+        qc.h(flags)
+        for flag in flags:
+            qc.cx(flag, ancilla)
+
+        for flag in flags:
+            for d in data:
+                qc.cx(d, flag)
+        
+        for flag in flags:
+            qc.cx(flag, ancilla)
+
+        qc.h(flags)
+        qc.measure(flags, [0, 1])
+        qc.measure([ancilla], [2])
+
+        return qc.to_instruction(label="z gauge")
+
     
     def _x_stabilizer(self):
         qc = ConstrainedQuantumCircuit(self.lattice, self.lattice.num_nodes, 6)
@@ -472,6 +638,8 @@ class HeavyHexCode3(BaseCycle):
 
         qc.barrier()
         qc.measure(flag_nodes, range(6))
+        qc.barrier()
+
         qc.reset(flag_nodes)
         qc.barrier()
 
@@ -509,6 +677,8 @@ class HeavyHexCode3(BaseCycle):
         qc.barrier()
         qc.measure(ancilla_nodes, range(4))
         qc.measure(flag_nodes, range(4, 12))
+
+        qc.barrier()
 
         qc.reset(flag_nodes + ancilla_nodes)
 

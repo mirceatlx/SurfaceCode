@@ -105,8 +105,14 @@ class HeavyHexLattice(BaseLattice):
 
         # Formula for number of nodes for HeavyHexLattice given a distance
         self.distance = distance
-        self.num_nodes = int((5*distance**2- 2*distance - 1) / 2)
-        self.flag_data_column_length = int(distance * 2 - 1)
+        self.num_data = int(distance ** 2)
+        self.num_flag = int(distance*(distance - 1) + 2 * (distance - 1))
+        self.num_ancilla = int((distance//2 + 1)*(distance - 1))
+        # data, flag inside, ancilla, flag outside
+
+        self.num_nodes = self.num_data + self.num_flag + self.num_ancilla
+        # self.num_nodes = int((5*distance**2- 2*distance - 1) / 2)
+        # self.flag_data_column_length = int(distance * 2 - 1)
         self.ancilla_column_length = (distance + 1) // 2
 
         # Nodes indices go from up down then left to right
@@ -145,34 +151,18 @@ class HeavyHexLattice(BaseLattice):
         Method that creates nodes and assign them their index in the array
         """
         nodes = []
-        # Add data, flag, ancilla nodes
-        col = 0
-        itr = 0
-        for i in range(self.num_nodes):
-            # If we are on data flag node column
-            if col % 2 == 0:
-                if itr % 2 == 0:
-                    nodes.append(DataNode())
-                else:
-                    nodes.append(FlagNode())
 
-                # If we reach the end of the column, increment col and reset itr values
-                if itr == self.flag_data_column_length - 1:
-                    col += 1
-                    itr = 0
-                    continue
-                
-            #If we are on ancilla node column
-            if col % 2 == 1:
-                nodes.append(AncillaNode())
+        # Data nodes are in front of list
+        for i in range(0, self.num_data):
+            nodes.append(DataNode())
 
-                # If we reach the end of the column, increment col and reset itr values
-                if itr == self.ancilla_column_length - 1:
-                    itr = 0
-                    col += 1
-                    continue
+        # Flag nodes are in middle of list
+        for i in range(self.num_data, self.num_data + self.num_flag):
+            nodes.append(FlagNode())
 
-            itr += 1
+        # Ancilla nodes are at back of list
+        for i in range(self.num_data + self.num_flag, self.num_data + self.num_flag + self.num_ancilla):
+            nodes.append(AncillaNode())
         
         return nodes
     
@@ -181,6 +171,22 @@ class HeavyHexLattice(BaseLattice):
         Assigns edges to data and flag nodes and returns a the dictionary graph
         """
         graph = {}
+        # Initialize list of neighbours
+        for i in range(self.num_nodes):
+            graph[i] = []
+
+        for data in range(self.num_data):
+            # If not at bottom left corner
+            if data != self.distance - 1:
+                # Add bottom flag node
+                flag1 = data + self.num_data + 1
+                graph[data].append(Edge(flag1))
+
+            # If not at top right corner
+            if data != self.distance * (self.distance - 1):
+                # Add top flag node
+                edges.append(Edge(data + self.num_data))
+                graph[data].append(Edge(flag1))
         col = 0
         itr = 0
         # Connect data and flag nodes
