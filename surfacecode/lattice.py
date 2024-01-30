@@ -50,13 +50,27 @@ class SquareLattice(BaseLattice):
         assert width % 2 == 1
         assert height % 2 == 1
 
-        nodes = [DataNode() if i % 2 == 0 else BaseNode() for i in range(width*height)]
+        nodes = [BaseNode(-1) for i in range(width * height)]
         j = 1
-        for i in range(1, width*height, 2):
-            if i >= width *j:
+        z_counter = x_counter = d_counter = 0
+        for i in range(width * height):
+            if i >= width * j:
                 j += 1
             # if i < width * j:
-            nodes[i] = ZNode() if j % 2 == 1 else XNode()
+            if i % 2 == 1:
+                if j % 2 == 1:
+                    nodes[i] = ZNode(z_counter)
+                    z_counter += 1
+                else:
+                    nodes[i] = XNode(x_counter)
+                    x_counter += 1
+            else:
+                nodes[i] = DataNode(d_counter)
+                d_counter += 1
+
+        self.z_counter = z_counter
+        self.x_counter = x_counter
+        self.d_counter = d_counter
             
             
         graph = {}
