@@ -2,7 +2,7 @@ import numpy as np
 import pandas
 
 
-def parse_csv(path):
+def parse_csv(path: str, length: int):
     """
     Parse CSV file with results from the IBM platform.
     """
@@ -11,9 +11,11 @@ def parse_csv(path):
 
     keys = []
     counts = []
-    for result in results:
+    for i, result in enumerate(results.values):
         val = int(result[0], 16)
-        key = format(val, '0>42b')
+        key = bin(val)
+        key = key[2:]
+        key = '0' * (length - len(key)) + key
         print(key)
         count = int(result[1])
         keys.append(key)
