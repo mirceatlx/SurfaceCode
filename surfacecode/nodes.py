@@ -1,16 +1,45 @@
+"""
+Types of nodes in stabilizer code.
+"""
+
 class BaseNode:
-    def __init__(self):
-        pass
+    def __init__(self, idx: int):
+        """
+        """
+        self.idx = idx
 
 
 class ZNode(BaseNode):
-    def __init__(self):
-        pass
+    """
+    Measure-Z qubit.
+    """
+    def __init__(self, idx: int):
+        super().__init__(idx)
 
 class XNode(BaseNode):
-    def __init__(self):
-        pass
+    """
+    Measure-X qubit.
+    """
+    def __init__(self, idx: int):
+        super().__init__(idx)
 
 class DataNode(BaseNode):
-    def __init__(self):
-        pass
+    """
+    Data qubit.
+    """
+    def __init__(self, idx: int):
+        super().__init__(idx)
+
+class FlagNode(BaseNode):
+    """
+    Flag qubit.
+    """
+    def __init__(self, idx: int):
+        super().__init__(idx)
+
+class AncillaNode(BaseNode):
+    """
+    Ancilla qubit.
+    """
+    def _init__(self, idx: int):
+        super().__init__(idx)

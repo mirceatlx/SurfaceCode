@@ -1,0 +1,28 @@
+Experiments:
+
+
+Simulator:
+1. Initialize and measure logical qubit: 
+  - add noise between cycles (measure error rates)
+  - compare the two ways of iniialization and measurement (error rates)
+
+2. Single bit-flip operations logical qubit:
+  - add noise between cycles (measure error rates)
+  - compare the two ways of iniialization and measurement (error rates)
+  - (run on general simulator with real noise)
+
+3. Two qubit operations logical qubit:
+  - add noise between cycles (measure error rates)
+  - compare the two ways of iniialization and measurement (error rates)
+
+
+
+Real:
+1. Let Qiskit tranpile the circuit to make it compatible with IBM platform
+  - 1, 2 (measure error rates) and compare with simulator
+
+
+
+Potential experiments:
+- Quantum error correction cyle - logical error prob.
+- Code distance d  - Logical error rate per cycle
